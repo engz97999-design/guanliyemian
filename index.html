@@ -101,6 +101,32 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 .wallet-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #f0e0c0;font-size:0.85rem}
 .wallet-row:last-child{border-bottom:none}
 .wallet-note{color:#999;font-size:0.78rem;margin-top:10px;line-height:1.6}
+/* 样式升级 */
+body{background:linear-gradient(180deg,#f6f7fb 0%,#eef0f6 100%);color:#2b2f36}
+.login-box{background:#fff;border:1px solid #eceef3;border-radius:8px;box-shadow:0 12px 40px rgba(26,26,46,.12);padding:36px}
+.login-box h1{color:#171a26}
+.login-box input{border:1.5px solid #dde1ea;background:#fafbfd;border-radius:8px}
+.login-box input:focus{border-color:#c81e1e;box-shadow:0 0 0 3px rgba(204,0,0,.08);background:#fff}
+.login-btn{border-radius:8px;box-shadow:0 6px 16px rgba(204,0,0,.18)}
+.admin-wrap{background:transparent}
+.admin-header{background:linear-gradient(120deg,#161a2e,#252a42 55%,#3a1f2f);position:sticky;top:0;z-index:20;box-shadow:0 2px 14px rgba(0,0,0,.18)}
+.admin-header h1{letter-spacing:.5px}
+.admin-header .btn-logout{border-radius:8px;border-color:rgba(255,255,255,.28)}
+.admin-body{padding:22px 20px 60px;max-width:960px}
+.status-bar{background:#f0faf3;border:1px solid #d9efe0;border-radius:8px;color:#247a4a}
+.card{background:#fff;border:1px solid #eef0f5;border-radius:8px;box-shadow:0 4px 18px rgba(23,26,38,.06)}
+.card summary{border-bottom:1px solid #f0f2f7;border-radius:8px 8px 0 0;background:#fbfbfd}
+.orders-section,.pwd-section,.pay-counter,.wallet-admin,.messages-admin,.stock-admin{background:#fff;border:1px solid #eef0f5;border-radius:8px;padding:14px 18px;margin:0 0 14px;box-shadow:0 4px 18px rgba(23,26,38,.05)}
+.orders-section summary,.pwd-section summary,.pay-counter summary,.wallet-admin summary,.messages-admin summary,.stock-admin summary{font-size:.92rem;font-weight:700;color:#262b36;padding:2px 0}
+.order-item{background:#fafbfd;border:1px solid #eef0f5;border-radius:8px;padding:12px 14px;margin-top:10px;border-bottom:none}
+.msg-item{background:#fafbfd;border-color:#eef0f5}
+.stock-item{border-bottom:1px solid #f0f2f7}
+.qr-box{background:#fafbfd;border:1px solid #f0e8e8;border-radius:8px}
+.btn-primary,.btn-save-qr,.pwd-field button{box-shadow:0 4px 12px rgba(204,0,0,.16)}
+.toast{border-radius:8px}
+.price-input{border:1.5px solid #e3e6ee;border-radius:8px;background:#fff}
+.order-status,.stock-input{border:1px solid #e0e4ec;border-radius:6px;background:#fff}
+@media(max-width:640px){.admin-body{padding:14px 12px 50px}.card,.orders-section,.pwd-section,.pay-counter,.wallet-admin,.messages-admin,.stock-admin{padding:12px 14px}}
 </style>
 </head>
 <body>
