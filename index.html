@@ -68,6 +68,11 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 .qr-placeholder{color:#ccc;font-size:0.78rem}
 .btn-save-qr{padding:6px 16px;border-radius:6px;border:none;background:var(--red);color:#fff;cursor:pointer;font-size:0.82rem;margin-top:8px}
 #bankAccount{width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:8px;margin:10px 0;font-size:0.85rem}
+.messages-admin{margin-top:12px;padding-top:12px;border-top:1px solid #eee}
+.messages-admin summary{cursor:pointer;font-size:0.85rem;color:#999}
+.msg-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:0.85rem}
+.msg-item:last-child{border-bottom:none}
+.msg-del{flex-shrink:0;padding:4px 12px;border-radius:6px;border:none;background:var(--red);color:#fff;cursor:pointer;font-size:0.78rem}
 </style>
 </head>
 <body>
@@ -133,6 +138,10 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
         </div>
       </div>
     </details>
+    <details class="messages-admin">
+      <summary>删除留言</summary>
+      <div id="adminMsgsList"><div class="order-empty">暂无留言</div></div>
+    </details>
   </div>
 </div>
 
@@ -171,6 +180,7 @@ function doLogin(){
     loadOrders();
     loadQRs();
     loadBank();
+    loadMsgsAdmin();
   }else{
     document.getElementById("loginError").style.display="block";
   }
@@ -190,6 +200,7 @@ function checkAuth(){
     loadOrders();
     loadQRs();
     loadBank();
+    loadMsgsAdmin();
   }
 }
 
@@ -234,6 +245,35 @@ function changePwd(){
   document.getElementById("oldPwd").value="";
   document.getElementById("newPwd").value="";
   showToast("密码已修改");
+}
+
+function escHtml(s){
+  var d=document.createElement("div");
+  d.textContent=s==null?"":String(s);
+  return d.innerHTML;
+}
+
+function loadMsgsAdmin(){
+  var msgs=[];
+  try{msgs=JSON.parse(localStorage.getItem("liaoning_msgs"))||[]}catch(e){msgs=[]}
+  var list=document.getElementById("adminMsgsList");
+  if(!list)return;
+  if(!msgs.length){list.innerHTML='<div class="order-empty">暂无留言</div>';return}
+  list.innerHTML=msgs.map(function(m,i){
+    var name=m.n||"匿名",content=m.c||"",time=m.t||"";
+    return '<div class="msg-item"><div><div class="oi-header">'+escHtml(name)+' <span style="color:#999;font-size:0.78rem">'+escHtml(time)+'</span></div><div class="oi-detail">'+escHtml(content)+'</div></div><button class="msg-del" onclick="deleteMsg('+i+')">删除</button></div>';
+  }).join("");
+}
+
+function deleteMsg(i){
+  var msgs=[];
+  try{msgs=JSON.parse(localStorage.getItem("liaoning_msgs"))||[]}catch(e){msgs=[]}
+  if(i<0||i>=msgs.length)return;
+  if(!confirm("确定删除这条留言？"))return;
+  msgs.splice(i,1);
+  localStorage.setItem("liaoning_msgs",JSON.stringify(msgs));
+  loadMsgsAdmin();
+  showToast("留言已删除");
 }
 
 function loadBank(){
