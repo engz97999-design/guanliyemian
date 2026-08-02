@@ -81,6 +81,12 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 .msg-content{color:#555;font-size:0.85rem;margin-top:6px;line-height:1.6;word-break:break-word}
 .msg-del{flex-shrink:0;align-self:center;padding:6px 14px;border:1px solid #f0c4c4;border-radius:6px;background:#fff;color:var(--red);cursor:pointer;font-size:0.78rem;font-weight:600;transition:.2s}
 .msg-del:hover{background:var(--red);color:#fff}
+.stock-admin{margin-top:12px;padding-top:12px;border-top:1px solid #eee}
+.stock-admin summary{cursor:pointer;font-size:0.85rem;color:#999}
+.stock-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:0.85rem}
+.stock-item:last-child{border-bottom:none}
+.stock-item .stock-name{font-weight:700}
+.stock-input{width:80px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;text-align:center;font-size:0.9rem}
 </style>
 </head>
 <body>
@@ -150,6 +156,11 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
       <summary>删除留言 <span class="msg-count" id="msgCount">0</span></summary>
       <div id="adminMsgsList"><div class="order-empty">暂无留言</div></div>
     </details>
+    <details class="stock-admin">
+      <summary>库存管理</summary>
+      <div id="stockAdminList"></div>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="saveStockAdmin()">💾 保存库存</button>
+    </details>
   </div>
 </div>
 
@@ -189,6 +200,7 @@ function doLogin(){
     loadQRs();
     loadBank();
     loadMsgsAdmin();
+    loadStockAdmin();
   }else{
     document.getElementById("loginError").style.display="block";
   }
@@ -209,6 +221,7 @@ function checkAuth(){
     loadQRs();
     loadBank();
     loadMsgsAdmin();
+    loadStockAdmin();
   }
 }
 
@@ -284,6 +297,30 @@ function deleteMsg(i){
   localStorage.setItem("liaoning_msgs",JSON.stringify(msgs));
   loadMsgsAdmin();
   showToast("留言已删除");
+}
+
+var STOCK_DEFAULTS={"辽宁飞豹主场球衣":30,"辽宁飞豹客场球衣":30,"辽宁飞豹棒球帽":50,"辽宁飞豹围巾":50,"辽宁飞豹双肩包":30,"辽宁飞豹签名篮球":20};
+function loadStockAdmin(){
+  var data={};
+  try{data=JSON.parse(localStorage.getItem("liaoning_stock"))||{}}catch(e){data={}}
+  var list=document.getElementById("stockAdminList");
+  if(!list)return;
+  list.innerHTML=Object.keys(STOCK_DEFAULTS).map(function(n,i){
+    var v=(typeof data[n]==="number")?data[n]:STOCK_DEFAULTS[n];
+    return '<div class="stock-item"><span class="stock-name">'+escHtml(n)+'</span><input class="stock-input" type="number" min="0" id="stock'+i+'" value="'+v+'"></div>';
+  }).join("");
+}
+
+function saveStockAdmin(){
+  var data={};
+  Object.keys(STOCK_DEFAULTS).forEach(function(n,i){
+    var v=parseInt(document.getElementById("stock"+i).value,10);
+    if(isNaN(v)||v<0)v=0;
+    data[n]=v;
+  });
+  localStorage.setItem("liaoning_stock",JSON.stringify(data));
+  loadStockAdmin();
+  showToast("库存已保存");
 }
 
 function loadBank(){
