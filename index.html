@@ -366,7 +366,7 @@ function loadOrders(){
   if(!orders.length){list.innerHTML='<div class="order-empty">暂无订单</div>';return}
   list.innerHTML=orders.map(function(o,i){
     var color=i<3?"#e8f5e9":"#fff";
-    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div></div>';
+    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div></div>';
   }).join("");
 }
 
