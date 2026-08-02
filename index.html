@@ -70,9 +70,18 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 #bankAccount{width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:8px;margin:10px 0;font-size:0.85rem}
 .messages-admin{margin-top:12px;padding-top:12px;border-top:1px solid #eee}
 .messages-admin summary{cursor:pointer;font-size:0.85rem;color:#999}
-.msg-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:0.85rem}
-.msg-item:last-child{border-bottom:none}
-.msg-del{flex-shrink:0;padding:4px 12px;border-radius:6px;border:none;background:var(--red);color:#fff;cursor:pointer;font-size:0.78rem}
+.messages-admin summary{display:flex;align-items:center;gap:8px}
+.msg-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#fff0f0;color:var(--red);font-size:0.72rem;font-weight:700}
+.msg-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;margin-top:10px;background:#fafafa;border:1px solid #eee;border-radius:8px}
+.msg-item:last-child{margin-bottom:2px}
+.msg-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--red),#990000);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.msg-body{flex:1;min-width:0}
+.msg-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.msg-name{font-weight:700;color:#333;font-size:0.9rem}
+.msg-time{color:#aaa;font-size:0.75rem}
+.msg-content{color:#555;font-size:0.85rem;margin-top:6px;line-height:1.6;word-break:break-word}
+.msg-del{flex-shrink:0;align-self:center;padding:6px 14px;border:1px solid #f0c4c4;border-radius:6px;background:#fff;color:var(--red);cursor:pointer;font-size:0.78rem;font-weight:600;transition:.2s}
+.msg-del:hover{background:var(--red);color:#fff}
 </style>
 </head>
 <body>
@@ -139,7 +148,7 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
       </div>
     </details>
     <details class="messages-admin">
-      <summary>删除留言</summary>
+      <summary>删除留言 <span class="msg-count" id="msgCount">0</span></summary>
       <div id="adminMsgsList"><div class="order-empty">暂无留言</div></div>
     </details>
   </div>
@@ -258,10 +267,12 @@ function loadMsgsAdmin(){
   try{msgs=JSON.parse(localStorage.getItem("liaoning_msgs"))||[]}catch(e){msgs=[]}
   var list=document.getElementById("adminMsgsList");
   if(!list)return;
+  var count=document.getElementById("msgCount");
+  if(count)count.textContent=msgs.length;
   if(!msgs.length){list.innerHTML='<div class="order-empty">暂无留言</div>';return}
   list.innerHTML=msgs.map(function(m,i){
     var name=m.n||"匿名",content=m.c||"",time=m.t||"";
-    return '<div class="msg-item"><div><div class="oi-header">'+escHtml(name)+' <span style="color:#999;font-size:0.78rem">'+escHtml(time)+'</span></div><div class="oi-detail">'+escHtml(content)+'</div></div><button class="msg-del" onclick="deleteMsg('+i+')">删除</button></div>';
+    return '<div class="msg-item"><div class="msg-avatar">'+escHtml(name.charAt(0))+'</div><div class="msg-body"><div class="msg-head"><span class="msg-name">'+escHtml(name)+'</span><span class="msg-time">'+escHtml(time)+'</span></div><div class="msg-content">'+escHtml(content)+'</div></div><button class="msg-del" onclick="deleteMsg('+i+')">删除</button></div>';
   }).join("");
 }
 
