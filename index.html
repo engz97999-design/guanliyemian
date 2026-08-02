@@ -185,6 +185,45 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 var ITEMS=[],DEFAULTS={};
 var DEFAULT_PWD="liaoning123";
 
+var SUPABASE_URL="https://dqhuymmmiwyxomitxqaw.supabase.co";
+var SUPABASE_KEY="sb_publishable_TxNaXpsb03xqsCX1YODviw_hPpCdG3k";
+var DB_API=SUPABASE_URL+"/rest/v1";
+var DB_HEADERS={apikey:SUPABASE_KEY,"Authorization":"Bearer "+SUPABASE_KEY,"Content-Type":"application/json"};
+async function dbGet(table,select){
+  try{
+    var r=await fetch(DB_API+"/"+table+"?select="+encodeURIComponent(select),{headers:DB_HEADERS});
+    if(!r.ok)return[];
+    return await r.json();
+  }catch(e){return[]}
+}
+async function dbPost(table,body){
+  try{
+    var r=await fetch(DB_API+"/"+table,{method:"POST",headers:Object.assign({},DB_HEADERS,{"Prefer":"return=representation"}),body:JSON.stringify(body)});
+    if(!r.ok)return null;
+    var d=await r.json();
+    return Array.isArray(d)?d[0]:d;
+  }catch(e){return null}
+}
+async function dbPatch(table,id,body){
+  try{
+    var r=await fetch(DB_API+"/"+table+"?id=eq."+id,{method:"PATCH",headers:DB_HEADERS,body:JSON.stringify(body)});
+    return r.ok;
+  }catch(e){return false}
+}
+async function dbDelete(table,id){
+  try{
+    var r=await fetch(DB_API+"/"+table+"?id=eq."+id,{method:"DELETE",headers:DB_HEADERS});
+    return r.ok;
+  }catch(e){return false}
+}
+async function dbUpsert(table,rows,conflict){
+  try{
+    var url=DB_API+"/"+table+(conflict?"?on_conflict="+conflict:"");
+    var r=await fetch(url,{method:"POST",headers:Object.assign({},DB_HEADERS,{"Prefer":"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify(rows)});
+    return r.ok;
+  }catch(e){return false}
+}
+
 function getPassword(){
   return localStorage.getItem("liaoning_admin_pwd")||DEFAULT_PWD;
 }
@@ -242,9 +281,11 @@ function checkAuth(){
   }
 }
 
-function loadPrices(){
+async function loadPrices(){
   DEFAULTS={"辽宁飞豹主场球衣":299,"辽宁飞豹客场球衣":299,"辽宁飞豹棒球帽":129,"辽宁飞豹围巾":99,"辽宁飞豹双肩包":199,"辽宁飞豹签名篮球":599,"辽宁飞豹卫衣":199,"辽宁飞豹日历":49,"辽宁飞豹旅行包":259,"辽宁飞豹训练篮球":399};
-  var data=getPricesData();
+  var data={};
+  var rows=await dbGet("prices","name,price");
+  rows.forEach(function(r){data[r.name]=r.price});
   ITEMS=Object.keys(DEFAULTS).map(function(n){
     return{name:n,price:(typeof data[n]==="number")?data[n]:DEFAULTS[n],dp:DEFAULTS[n]};
   });
@@ -259,17 +300,17 @@ function render(){
   });
 }
 
-function savePrices(){
-  var data={};
-  ITEMS.forEach(function(it,i){data[it.name]=parseInt(document.getElementById("p"+i).value)||it.price});
-  savePricesData(data);
+async function savePrices(){
+  var rows=ITEMS.map(function(it,i){return{name:it.name,price:parseInt(document.getElementById("p"+i).value)||it.price};});
+  await dbUpsert("prices",rows,"name");
   showToast("价格已保存");
   loadPrices();
 }
 
-function resetPrices(){
+async function resetPrices(){
   if(!confirm("确定恢复默认？"))return;
-  savePricesData({});
+  var rows=Object.keys(DEFAULTS).map(function(n){return{name:n,price:DEFAULTS[n]};});
+  await dbUpsert("prices",rows,"name");
   showToast("已恢复默认");
   loadPrices();
 }
@@ -291,9 +332,8 @@ function escHtml(s){
   return d.innerHTML;
 }
 
-function loadMsgsAdmin(){
-  var msgs=[];
-  try{msgs=JSON.parse(localStorage.getItem("liaoning_msgs"))||[]}catch(e){msgs=[]}
+async function loadMsgsAdmin(){
+  var msgs=await dbGet("messages","id,n,c,t");
   var list=document.getElementById("adminMsgsList");
   if(!list)return;
   var count=document.getElementById("msgCount");
@@ -301,25 +341,22 @@ function loadMsgsAdmin(){
   if(!msgs.length){list.innerHTML='<div class="order-empty">暂无留言</div>';return}
   list.innerHTML=msgs.map(function(m,i){
     var name=m.n||"匿名",content=m.c||"",time=m.t||"";
-    return '<div class="msg-item"><div class="msg-avatar">'+escHtml(name.charAt(0))+'</div><div class="msg-body"><div class="msg-head"><span class="msg-name">'+escHtml(name)+'</span><span class="msg-time">'+escHtml(time)+'</span></div><div class="msg-content">'+escHtml(content)+'</div></div><button class="msg-del" onclick="deleteMsg('+i+')">删除</button></div>';
+    return '<div class="msg-item"><div class="msg-avatar">'+escHtml(name.charAt(0))+'</div><div class="msg-body"><div class="msg-head"><span class="msg-name">'+escHtml(name)+'</span><span class="msg-time">'+escHtml(time)+'</span></div><div class="msg-content">'+escHtml(content)+'</div></div><button class="msg-del" onclick="deleteMsg('+m.id+')">删除</button></div>';
   }).join("");
 }
 
-function deleteMsg(i){
-  var msgs=[];
-  try{msgs=JSON.parse(localStorage.getItem("liaoning_msgs"))||[]}catch(e){msgs=[]}
-  if(i<0||i>=msgs.length)return;
+async function deleteMsg(id){
   if(!confirm("确定删除这条留言？"))return;
-  msgs.splice(i,1);
-  localStorage.setItem("liaoning_msgs",JSON.stringify(msgs));
+  await dbDelete("messages",id);
   loadMsgsAdmin();
   showToast("留言已删除");
 }
 
 var STOCK_DEFAULTS={"辽宁飞豹主场球衣":30,"辽宁飞豹客场球衣":30,"辽宁飞豹棒球帽":50,"辽宁飞豹围巾":50,"辽宁飞豹双肩包":30,"辽宁飞豹签名篮球":20,"辽宁飞豹卫衣":30,"辽宁飞豹日历":50,"辽宁飞豹旅行包":25,"辽宁飞豹训练篮球":30};
-function loadStockAdmin(){
+async function loadStockAdmin(){
   var data={};
-  try{data=JSON.parse(localStorage.getItem("liaoning_stock"))||{}}catch(e){data={}}
+  var rows=await dbGet("stock","name,stock");
+  rows.forEach(function(r){data[r.name]=r.stock});
   var list=document.getElementById("stockAdminList");
   if(!list)return;
   list.innerHTML=Object.keys(STOCK_DEFAULTS).map(function(n,i){
@@ -328,14 +365,13 @@ function loadStockAdmin(){
   }).join("");
 }
 
-function saveStockAdmin(){
-  var data={};
-  Object.keys(STOCK_DEFAULTS).forEach(function(n,i){
+async function saveStockAdmin(){
+  var rows=Object.keys(STOCK_DEFAULTS).map(function(n,i){
     var v=parseInt(document.getElementById("stock"+i).value,10);
     if(isNaN(v)||v<0)v=0;
-    data[n]=v;
+    return{name:n,stock:v};
   });
-  localStorage.setItem("liaoning_stock",JSON.stringify(data));
+  await dbUpsert("stock",rows,"name");
   loadStockAdmin();
   showToast("库存已保存");
 }
@@ -377,8 +413,10 @@ function saveQR(type){
   reader.readAsDataURL(file);
 }
 
-function loadOrders(){
-  var orders=JSON.parse(localStorage.getItem("liaoning_orders")||"[]");
+var ordersCache=[];
+async function loadOrders(){
+  var orders=await dbGet("orders","id,item,qty,size,price,pay,name,phone,addr,note,time,paid,status");
+  ordersCache=orders;
   var list=document.getElementById("ordersList");
   if(!orders.length){list.innerHTML='<div class="order-empty">暂无订单</div>';return}
   list.innerHTML=orders.map(function(o,i){
@@ -387,72 +425,57 @@ function loadOrders(){
     var status=o.status||"待处理";
     var opts=["待处理","已发货","已完成"].map(function(s){return '<option value="'+s+'"'+(status===s?" selected":"")+'>'+s+'</option>';}).join("");
     var amount=o.price?o.price*o.qty:0;
-    var confirmBtn=(o.pay&&o.pay!=="cod"&&!o.paid)?'<button class="order-del" onclick="confirmPayment('+i+')">确认收款</button>':'';
-    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+(pay?' · '+pay:'')+(amount?' · ¥'+amount:'')+(o.paid?' · 已付款':'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div><div class="order-actions">'+confirmBtn+'<select class="order-status" onchange="updateOrderStatus('+i+',this.value)">'+opts+'</select><button class="order-del" onclick="deleteOrder('+i+')">删除</button></div></div>';
+    var confirmBtn=(o.pay&&o.pay!=="cod"&&!o.paid)?'<button class="order-del" onclick="confirmPayment('+o.id+')">确认收款</button>':'';
+    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+(pay?' · '+pay:'')+(amount?' · ¥'+amount:'')+(o.paid?' · 已付款':'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div><div class="order-actions">'+confirmBtn+'<select class="order-status" onchange="updateOrderStatus('+o.id+',this.value)">'+opts+'</select><button class="order-del" onclick="deleteOrder('+o.id+')">删除</button></div></div>';
   }).join("");
 }
 
-function updateOrderStatus(i,status){
-  var orders=[];
-  try{orders=JSON.parse(localStorage.getItem("liaoning_orders"))||[]}catch(e){orders=[]}
-  if(i<0||i>=orders.length)return;
-  orders[i].status=status;
-  localStorage.setItem("liaoning_orders",JSON.stringify(orders));
+async function updateOrderStatus(id,status){
+  await dbPatch("orders",id,{status:status});
   loadOrders();
   showToast("订单状态已更新");
 }
 
-function deleteOrder(i){
-  var orders=[];
-  try{orders=JSON.parse(localStorage.getItem("liaoning_orders"))||[]}catch(e){orders=[]}
-  if(i<0||i>=orders.length)return;
+async function deleteOrder(id){
   if(!confirm("确定删除这条订单？"))return;
-  orders.splice(i,1);
-  localStorage.setItem("liaoning_orders",JSON.stringify(orders));
+  await dbDelete("orders",id);
   loadOrders();
   showToast("订单已删除");
 }
 
-function getWallet(){
-  try{return JSON.parse(localStorage.getItem("liaoning_wallet"))||{wechat:0,alipay:0,bank:0,cod:0,history:[]}}catch(e){return{wechat:0,alipay:0,bank:0,cod:0,history:[]}}
-}
-
-function loadWallet(){
+async function loadWallet(){
   var box=document.getElementById("walletBox");
   if(!box)return;
-  var w=getWallet();
-  var total=(w.wechat||0)+(w.alipay||0)+(w.bank||0)+(w.cod||0);
+  var channels=await dbGet("wallet_channels","channel,amount");
+  var history=await dbGet("wallet_history","created_at,item,qty,amount,channel");
+  var w={wechat:0,alipay:0,bank:0,cod:0};
+  channels.forEach(function(r){if(r.channel in w)w[r.channel]=Number(r.amount)||0;});
+  var total=w.wechat+w.alipay+w.bank+w.cod;
   var rows=[
-    ['微信',w.wechat||0],
-    ['支付宝',w.alipay||0],
-    ['银行转账',w.bank||0],
-    ['货到付款',w.cod||0]
+    ['微信',w.wechat],
+    ['支付宝',w.alipay],
+    ['银行转账',w.bank],
+    ['货到付款',w.cod]
   ].map(function(r){return '<div class="wallet-row"><span>'+r[0]+'</span><span>¥'+r[1]+'</span></div>';}).join("");
-  var history=(w.history||[]).slice(0,8).map(function(h){
-    return '<div class="wallet-row"><span>'+h.time+' · '+h.item+' × '+h.qty+' · '+(WALLET_CHANNELS[h.channel]||h.channel)+'</span><span>+¥'+h.amount+'</span></div>';
+  var histRows=history.slice(0,8).map(function(h){
+    return '<div class="wallet-row"><span>'+new Date(h.created_at).toLocaleString()+' · '+h.item+' × '+h.qty+' · '+(WALLET_CHANNELS[h.channel]||h.channel)+'</span><span>+¥'+h.amount+'</span></div>';
   }).join("");
-  box.innerHTML='<div class="wallet-total">钱包总额：¥'+total+'</div>'+rows+(history?'<div style="margin-top:10px;font-weight:700;font-size:0.82rem">最近收款记录</div>'+history:'')+'<div class="wallet-note">说明：管理员在订单中点“确认收款”后，订单金额会按支付渠道（微信/支付宝/银行转账/货到付款）自动计入本钱包。金额来自本地已确认订单，仅作记账用途。</div>';
+  box.innerHTML='<div class="wallet-total">钱包总额：¥'+total+'</div>'+rows+(histRows?'<div style="margin-top:10px;font-weight:700;font-size:0.82rem">最近收款记录</div>'+histRows:'')+'<div class="wallet-note">说明：管理员在订单中点“确认收款”后，订单金额会按支付渠道（微信/支付宝/银行转账/货到付款）自动计入本钱包，并同步到云数据库。</div>';
 }
 
-function confirmPayment(i){
-  var orders=[];
-  try{orders=JSON.parse(localStorage.getItem("liaoning_orders"))||[]}catch(e){orders=[]}
-  if(i<0||i>=orders.length)return;
-  var o=orders[i];
+async function confirmPayment(id){
+  var o=null;
+  ordersCache.forEach(function(x){if(String(x.id)===String(id))o=x;});
   if(!o||o.paid)return;
   var amount=(o.price||0)*o.qty;
   if(amount<=0){showToast("该订单金额为0，无法确认收款",true);return}
   var ch=o.pay||"cod";
-  var w=getWallet();
-  if(!(ch in w))ch="cod";
-  w[ch]=(w[ch]||0)+amount;
-  w.history=w.history||[];
-  w.history.unshift({time:new Date().toLocaleString(),item:o.item,qty:o.qty,amount:amount,channel:ch});
-  o.paid=true;
-  o.payTime=w.history[0].time;
-  o.status="已付款";
-  localStorage.setItem("liaoning_orders",JSON.stringify(orders));
-  localStorage.setItem("liaoning_wallet",JSON.stringify(w));
+  var channels=await dbGet("wallet_channels","channel,amount");
+  var cur=channels.find(function(r){return r.channel===ch;});
+  var amt=(cur?Number(cur.amount):0)+amount;
+  await dbUpsert("wallet_channels",[{channel:ch,amount:amt}],"channel");
+  await dbPost("wallet_history",{item:o.item,qty:o.qty,amount:amount,channel:ch});
+  await dbPatch("orders",id,{paid:true,pay_time:new Date().toLocaleString(),status:"已付款"});
   loadOrders();
   loadWallet();
   showToast("已确认收款，金额已进入钱包");
