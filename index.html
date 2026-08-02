@@ -41,6 +41,7 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 .status-bar{background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:10px 16px;font-size:0.85rem;color:#2e7d32;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
 .card{background:#fff;border-radius:var(--radius);box-shadow:0 2px 12px rgba(0,0,0,0.08);overflow:hidden;margin-bottom:16px}
 .card-header{padding:14px 20px;font-weight:700;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.card summary{cursor:pointer;font-size:1rem;font-weight:700;color:#333;padding:14px 20px;border-bottom:1px solid #eee}
 .card-body{padding:16px 20px}
 .merch-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f0f0f0}
 .merch-item:last-child{border-bottom:none}
@@ -123,10 +124,10 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
   </div>
   <div class="admin-body">
     <div class="status-bar" id="statusBar">本地模式 · 数据保存在本机浏览器</div>
-    <div class="card">
-      <div class="card-header"><span>📦 周边价格管理</span></div>
+    <details class="card">
+      <summary>📦 周边价格管理</summary>
       <div class="card-body" id="merchList">加载中...</div>
-    </div>
+    </details>
     <div class="actions">
       <button class="btn btn-primary" onclick="savePrices()">💾 保存价格</button>
       <button class="btn btn-secondary" onclick="resetPrices()">↺ 恢复默认</button>
