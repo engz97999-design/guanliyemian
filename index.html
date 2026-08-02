@@ -29,6 +29,8 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 .order-status{padding:5px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.78rem;background:#fff;color:#333}
 .order-del{flex-shrink:0;padding:6px 14px;border:1px solid #f0c4c4;border-radius:6px;background:#fff;color:var(--red);cursor:pointer;font-size:0.78rem;font-weight:600;transition:.2s}
 .order-del:hover{background:var(--red);color:#fff}
+.express-box{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.express-box input{flex:1;min-width:120px;padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.78rem}
  
 .admin-wrap{width:100%;min-height:100vh;display:none;flex-direction:column}
 .admin-header{background:#1a1a2e;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
@@ -415,7 +417,7 @@ function saveQR(type){
 
 var ordersCache=[];
 async function loadOrders(){
-  var orders=await dbGet("orders","id,item,qty,size,price,pay,name,phone,addr,note,time,paid,status");
+  var orders=await dbGet("orders","id,item,qty,size,price,pay,name,phone,addr,note,time,paid,status,express_company,express_no,express_status");
   ordersCache=orders;
   var list=document.getElementById("ordersList");
   if(!orders.length){list.innerHTML='<div class="order-empty">暂无订单</div>';return}
@@ -426,7 +428,8 @@ async function loadOrders(){
     var opts=["待处理","已发货","已完成"].map(function(s){return '<option value="'+s+'"'+(status===s?" selected":"")+'>'+s+'</option>';}).join("");
     var amount=o.price?o.price*o.qty:0;
     var confirmBtn=(o.pay&&o.pay!=="cod"&&!o.paid)?'<button class="order-del" onclick="confirmPayment('+o.id+')">确认收款</button>':'';
-    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+(pay?' · '+pay:'')+(amount?' · ¥'+amount:'')+(o.paid?' · 已付款':'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div><div class="order-actions">'+confirmBtn+'<select class="order-status" onchange="updateOrderStatus('+o.id+',this.value)">'+opts+'</select><button class="order-del" onclick="deleteOrder('+o.id+')">删除</button></div></div>';
+    var ec=o.express_company||"",en=o.express_no||"";
+    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+(pay?' · '+pay:'')+(amount?' · ¥'+amount:'')+(o.paid?' · 已付款':'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div><div class="order-actions">'+confirmBtn+'<select class="order-status" onchange="updateOrderStatus('+o.id+',this.value)">'+opts+'</select><button class="order-del" onclick="deleteOrder('+o.id+')">删除</button></div><div class="express-box"><input id="ec'+o.id+'" placeholder="快递公司" value="'+escHtml(ec)+'"><input id="en'+o.id+'" placeholder="快递单号" value="'+escHtml(en)+'"><button class="order-del" onclick="saveExpress('+o.id+')">保存快递</button></div></div>';
   }).join("");
 }
 
@@ -441,6 +444,14 @@ async function deleteOrder(id){
   await dbDelete("orders",id);
   loadOrders();
   showToast("订单已删除");
+}
+
+async function saveExpress(id){
+  var ec=document.getElementById("ec"+id).value.trim();
+  var en=document.getElementById("en"+id).value.trim();
+  await dbPatch("orders",id,{express_company:ec,express_no:en,express_status:(ec&&en)?"已发货":"未发货"});
+  loadOrders();
+  showToast("快递信息已保存");
 }
 
 async function loadWallet(){
