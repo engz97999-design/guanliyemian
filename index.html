@@ -91,6 +91,13 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
 .stock-item:last-child{border-bottom:none}
 .stock-item .stock-name{font-weight:700}
 .stock-input{width:80px;padding:6px 8px;border:1px solid #ddd;border-radius:6px;text-align:center;font-size:0.9rem}
+.wallet-admin{margin-top:12px;padding-top:12px;border-top:1px solid #eee}
+.wallet-admin summary{cursor:pointer;font-size:0.85rem;color:#999}
+.wallet-box{background:#fffaf0;border:1px solid #f5e0b8;border-radius:8px;padding:14px 16px;margin-top:10px}
+.wallet-total{font-size:1.2rem;font-weight:800;color:var(--red);margin-bottom:10px}
+.wallet-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #f0e0c0;font-size:0.85rem}
+.wallet-row:last-child{border-bottom:none}
+.wallet-note{color:#999;font-size:0.78rem;margin-top:10px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -156,6 +163,10 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
         </div>
       </div>
     </details>
+    <details class="wallet-admin">
+      <summary>💰 钱包 - 收款汇总</summary>
+      <div id="walletBox"></div>
+    </details>
     <details class="messages-admin">
       <summary>删除留言 <span class="msg-count" id="msgCount">0</span></summary>
       <div id="adminMsgsList"><div class="order-empty">暂无留言</div></div>
@@ -205,6 +216,7 @@ function doLogin(){
     loadBank();
     loadMsgsAdmin();
     loadStockAdmin();
+    loadWallet();
   }else{
     document.getElementById("loginError").style.display="block";
   }
@@ -226,6 +238,7 @@ function checkAuth(){
     loadBank();
     loadMsgsAdmin();
     loadStockAdmin();
+    loadWallet();
   }
 }
 
@@ -373,7 +386,9 @@ function loadOrders(){
     var pay=o.pay?({wechat:"微信",alipay:"支付宝",cod:"货到付款",bank:"银行转账"}[o.pay]||o.pay):"";
     var status=o.status||"待处理";
     var opts=["待处理","已发货","已完成"].map(function(s){return '<option value="'+s+'"'+(status===s?" selected":"")+'>'+s+'</option>';}).join("");
-    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+(pay?' · '+pay:'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div><div class="order-actions"><select class="order-status" onchange="updateOrderStatus('+i+',this.value)">'+opts+'</select><button class="order-del" onclick="deleteOrder('+i+')">删除</button></div></div>';
+    var amount=o.price?o.price*o.qty:0;
+    var confirmBtn=(o.pay&&o.pay!=="cod"&&!o.paid)?'<button class="order-del" onclick="confirmPayment('+i+')">确认收款</button>':'';
+    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+(pay?' · '+pay:'')+(amount?' · ¥'+amount:'')+(o.paid?' · 已付款':'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div><div class="order-actions">'+confirmBtn+'<select class="order-status" onchange="updateOrderStatus('+i+',this.value)">'+opts+'</select><button class="order-del" onclick="deleteOrder('+i+')">删除</button></div></div>';
   }).join("");
 }
 
@@ -397,6 +412,53 @@ function deleteOrder(i){
   loadOrders();
   showToast("订单已删除");
 }
+
+function getWallet(){
+  try{return JSON.parse(localStorage.getItem("liaoning_wallet"))||{wechat:0,alipay:0,bank:0,cod:0,history:[]}}catch(e){return{wechat:0,alipay:0,bank:0,cod:0,history:[]}}
+}
+
+function loadWallet(){
+  var box=document.getElementById("walletBox");
+  if(!box)return;
+  var w=getWallet();
+  var total=(w.wechat||0)+(w.alipay||0)+(w.bank||0)+(w.cod||0);
+  var rows=[
+    ['微信',w.wechat||0],
+    ['支付宝',w.alipay||0],
+    ['银行转账',w.bank||0],
+    ['货到付款',w.cod||0]
+  ].map(function(r){return '<div class="wallet-row"><span>'+r[0]+'</span><span>¥'+r[1]+'</span></div>';}).join("");
+  var history=(w.history||[]).slice(0,8).map(function(h){
+    return '<div class="wallet-row"><span>'+h.time+' · '+h.item+' × '+h.qty+' · '+(WALLET_CHANNELS[h.channel]||h.channel)+'</span><span>+¥'+h.amount+'</span></div>';
+  }).join("");
+  box.innerHTML='<div class="wallet-total">钱包总额：¥'+total+'</div>'+rows+(history?'<div style="margin-top:10px;font-weight:700;font-size:0.82rem">最近收款记录</div>'+history:'')+'<div class="wallet-note">说明：管理员在订单中点“确认收款”后，订单金额会按支付渠道（微信/支付宝/银行转账/货到付款）自动计入本钱包。金额来自本地已确认订单，仅作记账用途。</div>';
+}
+
+function confirmPayment(i){
+  var orders=[];
+  try{orders=JSON.parse(localStorage.getItem("liaoning_orders"))||[]}catch(e){orders=[]}
+  if(i<0||i>=orders.length)return;
+  var o=orders[i];
+  if(!o||o.paid)return;
+  var amount=(o.price||0)*o.qty;
+  if(amount<=0){showToast("该订单金额为0，无法确认收款",true);return}
+  var ch=o.pay||"cod";
+  var w=getWallet();
+  if(!(ch in w))ch="cod";
+  w[ch]=(w[ch]||0)+amount;
+  w.history=w.history||[];
+  w.history.unshift({time:new Date().toLocaleString(),item:o.item,qty:o.qty,amount:amount,channel:ch});
+  o.paid=true;
+  o.payTime=w.history[0].time;
+  o.status="已付款";
+  localStorage.setItem("liaoning_orders",JSON.stringify(orders));
+  localStorage.setItem("liaoning_wallet",JSON.stringify(w));
+  loadOrders();
+  loadWallet();
+  showToast("已确认收款，金额已进入钱包");
+}
+
+var WALLET_CHANNELS={wechat:"微信",alipay:"支付宝",bank:"银行转账",cod:"货到付款"};
 
 // Auto-check auth on load
 checkAuth();
