@@ -22,9 +22,13 @@ body{font-family:-apple-system,"Microsoft YaHei",PingFang SC,sans-serif;backgrou
  .orders-section summary{cursor:pointer;font-size:0.85rem;color:#999}
  .order-item{padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:0.85rem}
  .order-item:last-child{border-bottom:none}
- .order-item .oi-header{font-weight:600;margin-bottom:3px}
- .order-item .oi-detail{color:#888}
- .order-empty{padding:20px 0;text-align:center;color:#999;font-size:0.88rem}
+.order-item .oi-header{font-weight:600;margin-bottom:3px}
+.order-item .oi-detail{color:#888}
+.order-empty{padding:20px 0;text-align:center;color:#999;font-size:0.88rem}
+.order-actions{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.order-status{padding:5px 10px;border:1px solid #ddd;border-radius:6px;font-size:0.78rem;background:#fff;color:#333}
+.order-del{flex-shrink:0;padding:6px 14px;border:1px solid #f0c4c4;border-radius:6px;background:#fff;color:var(--red);cursor:pointer;font-size:0.78rem;font-weight:600;transition:.2s}
+.order-del:hover{background:var(--red);color:#fff}
  
 .admin-wrap{width:100%;min-height:100vh;display:none;flex-direction:column}
 .admin-header{background:#1a1a2e;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
@@ -366,8 +370,32 @@ function loadOrders(){
   if(!orders.length){list.innerHTML='<div class="order-empty">暂无订单</div>';return}
   list.innerHTML=orders.map(function(o,i){
     var color=i<3?"#e8f5e9":"#fff";
-    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div></div>';
+    var pay=o.pay?({wechat:"微信",alipay:"支付宝",cod:"货到付款",bank:"银行转账"}[o.pay]||o.pay):"";
+    var status=o.status||"待处理";
+    var opts=["待处理","已发货","已完成"].map(function(s){return '<option value="'+s+'"'+(status===s?" selected":"")+'>'+s+'</option>';}).join("");
+    return '<div class="order-item" style="background:'+color+'"><div class="oi-header">'+(i+1)+'. '+o.item+' × '+o.qty+(o.size?' · 尺码:'+o.size:'')+(pay?' · '+pay:'')+'</div><div class="oi-detail">'+o.name+' | '+o.phone+'<br>'+o.addr+(o.note?'<br>备注：'+o.note:'')+'<br><span style="color:#999;font-size:0.78rem">'+o.time+'</span></div><div class="order-actions"><select class="order-status" onchange="updateOrderStatus('+i+',this.value)">'+opts+'</select><button class="order-del" onclick="deleteOrder('+i+')">删除</button></div></div>';
   }).join("");
+}
+
+function updateOrderStatus(i,status){
+  var orders=[];
+  try{orders=JSON.parse(localStorage.getItem("liaoning_orders"))||[]}catch(e){orders=[]}
+  if(i<0||i>=orders.length)return;
+  orders[i].status=status;
+  localStorage.setItem("liaoning_orders",JSON.stringify(orders));
+  loadOrders();
+  showToast("订单状态已更新");
+}
+
+function deleteOrder(i){
+  var orders=[];
+  try{orders=JSON.parse(localStorage.getItem("liaoning_orders"))||[]}catch(e){orders=[]}
+  if(i<0||i>=orders.length)return;
+  if(!confirm("确定删除这条订单？"))return;
+  orders.splice(i,1);
+  localStorage.setItem("liaoning_orders",JSON.stringify(orders));
+  loadOrders();
+  showToast("订单已删除");
 }
 
 // Auto-check auth on load
