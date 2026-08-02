@@ -226,7 +226,7 @@ function checkAuth(){
 }
 
 function loadPrices(){
-  DEFAULTS={"辽宁飞豹主场球衣":299,"辽宁飞豹客场球衣":299,"辽宁飞豹棒球帽":129,"辽宁飞豹围巾":99,"辽宁飞豹双肩包":199,"辽宁飞豹签名篮球":599,"辽宁飞豹鸭舌帽":89,"辽宁飞豹针织帽":69,"辽宁飞豹旅行包":259,"辽宁飞豹训练篮球":399};
+  DEFAULTS={"辽宁飞豹主场球衣":299,"辽宁飞豹客场球衣":299,"辽宁飞豹棒球帽":129,"辽宁飞豹围巾":99,"辽宁飞豹双肩包":199,"辽宁飞豹签名篮球":599,"辽宁飞豹卫衣":199,"辽宁飞豹针织帽":69,"辽宁飞豹旅行包":259,"辽宁飞豹训练篮球":399};
   var data=getPricesData();
   ITEMS=Object.keys(DEFAULTS).map(function(n){
     return{name:n,price:(typeof data[n]==="number")?data[n]:DEFAULTS[n],dp:DEFAULTS[n]};
@@ -299,7 +299,7 @@ function deleteMsg(i){
   showToast("留言已删除");
 }
 
-var STOCK_DEFAULTS={"辽宁飞豹主场球衣":30,"辽宁飞豹客场球衣":30,"辽宁飞豹棒球帽":50,"辽宁飞豹围巾":50,"辽宁飞豹双肩包":30,"辽宁飞豹签名篮球":20,"辽宁飞豹鸭舌帽":50,"辽宁飞豹针织帽":50,"辽宁飞豹旅行包":25,"辽宁飞豹训练篮球":30};
+var STOCK_DEFAULTS={"辽宁飞豹主场球衣":30,"辽宁飞豹客场球衣":30,"辽宁飞豹棒球帽":50,"辽宁飞豹围巾":50,"辽宁飞豹双肩包":30,"辽宁飞豹签名篮球":20,"辽宁飞豹卫衣":30,"辽宁飞豹针织帽":50,"辽宁飞豹旅行包":25,"辽宁飞豹训练篮球":30};
 function loadStockAdmin(){
   var data={};
   try{data=JSON.parse(localStorage.getItem("liaoning_stock"))||{}}catch(e){data={}}
